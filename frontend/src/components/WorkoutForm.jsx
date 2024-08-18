@@ -1,5 +1,6 @@
 import { useState } from "react";
 import useWorkoutsContext from "../hooks/useWorkoutsContext";
+import useAuthContext from "../hooks/useAuthContext";
 
 const WorkoutForm = () => {
   const [title, setTitle] = useState("");
@@ -7,10 +8,12 @@ const WorkoutForm = () => {
   const [reps, setReps] = useState("");
   const [error, setError] = useState(null);
   const { dispatch } = useWorkoutsContext();
+  const { user } = useAuthContext();
   const [emptyFields, setEmptyFields] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setEmptyFields([]);
     if (!title || !load || !reps) {
       setEmptyFields(
         [!title && "title", !load && "load", !reps && "reps"].filter(Boolean)
@@ -18,27 +21,25 @@ const WorkoutForm = () => {
       setError("Please fill in all the fields.");
       return;
     }
-    const workout = { title, load, reps };
+    const workout = { title, load, reps, userId: user.userId };
     try {
       const response = await fetch("http://localhost:3001/api/workouts", {
         method: "POST",
         body: JSON.stringify(workout),
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
         },
       });
       const data = await response.json();
       if (response.ok) {
         dispatch({ type: "CREATE_WORKOUT", payload: data });
-        setEmptyFields([]);
         setTitle("");
         setLoad("");
         setReps("");
         setError(null);
-        console.log("Workout added successfully", data);
       } else {
         setError(data.message);
-        console.error("Error adding workout:", data.message);
       }
     } catch (err) {
       console.error(err);
