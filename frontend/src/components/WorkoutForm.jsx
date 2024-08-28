@@ -1,15 +1,19 @@
-import { useState } from "react";
-import useWorkoutsContext from "../hooks/useWorkoutsContext";
-import useAuthContext from "../hooks/useAuthContext";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { createWorkout } from "../store/slices/workoutsSlice";
+// import useWorkoutsContext from "../hooks/useWorkoutsContext";
+// import useAuthContext from "../hooks/useAuthContext";
 
 const WorkoutForm = () => {
+  const dispatch = useDispatch();
   const [title, setTitle] = useState("");
   const [load, setLoad] = useState("");
   const [reps, setReps] = useState("");
   const [error, setError] = useState(null);
-  const { dispatch } = useWorkoutsContext();
-  const { user } = useAuthContext();
   const [emptyFields, setEmptyFields] = useState([]);
+  const { status, error: errorMsg } = useSelector((state) => state.workouts);
+  // const { dispatch } = useWorkoutsContext();
+  // const { user } = useAuthContext();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,30 +25,42 @@ const WorkoutForm = () => {
       setError("Please fill in all the fields.");
       return;
     }
-    const workout = { title, load, reps, userId: user.userId };
-    try {
-      const response = await fetch("http://localhost:3001/api/workouts", {
-        method: "POST",
-        body: JSON.stringify(workout),
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
-      const data = await response.json();
-      if (response.ok) {
-        dispatch({ type: "CREATE_WORKOUT", payload: data });
-        setTitle("");
-        setLoad("");
-        setReps("");
-        setError(null);
-      } else {
-        setError(data.message);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+    const workout = { title, load, reps };
+    dispatch(createWorkout(workout));
+    // const workout = { title, load, reps, userId: user.userId };
+    // try {
+    //   const response = await fetch("http://localhost:3001/api/workouts", {
+    //     method: "POST",
+    //     body: JSON.stringify(workout),
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //       Authorization: `Bearer ${user.token}`,
+    //     },
+    //   });
+    //   const data = await response.json();
+    //   if (response.ok) {
+    //     dispatch({ type: "CREATE_WORKOUT", payload: data });
+    //     setTitle("");
+    //     setLoad("");
+    //     setReps("");
+    //     setError(null);
+    //   } else {
+    //     setError(data.message);
+    //   }
+    // } catch (err) {
+    //   console.error(err);
+    // }
   };
+
+  useEffect(() => {
+    if (status === "success") {
+      setTitle("");
+      setLoad("");
+      setReps("");
+      setError(null);
+    }
+    if (status === "error") setError(errorMsg);
+  }, [status, errorMsg]);
 
   return (
     <form className="create" onSubmit={handleSubmit}>
